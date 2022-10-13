@@ -124,14 +124,15 @@ void UbloxNode::addProductInterface(std::string product_category,
   else if (product_category.compare("TIM") == 0)
     components_.push_back(ComponentPtr(new TimProduct));
   else if (product_category.compare("ADR") == 0 ||
-           product_category.compare("UDR") == 0)
+           product_category.compare("UDR") == 0 ||
+           product_category.compare("LAP") == 0)
     components_.push_back(ComponentPtr(new AdrUdrProduct(protocol_version_)));
   else if (product_category.compare("FTS") == 0)
     components_.push_back(ComponentPtr(new FtsProduct));
   else if(product_category.compare("SPG") != 0)
     ROS_WARN("Product category %s %s from MonVER message not recognized %s",
              product_category.c_str(), ref_rov.c_str(),
-             "options are HPG REF, HPG ROV, HPG #.#, HDG #.#, TIM, ADR, UDR, FTS, SPG");
+             "options are HPG REF, HPG ROV, HPG #.#, HDG #.#, TIM, ADR, UDR, LAP, FTS, SPG");
 }
 
 void UbloxNode::getRosParams() {
@@ -1381,7 +1382,7 @@ void AdrUdrProduct::callbackEsfMEAS(const ublox_msgs::EsfMEAS &m) {
     imu_.header.stamp = ros::Time::now();
     imu_.header.frame_id = frame_id;
     
-    static const float deg_per_sec = pow(2, -12);
+    static const float rad_per_sec = pow(2, -12) * M_PI / 180.0F;
     static const float m_per_sec_sq = pow(2, -10);
     static const float deg_c = 1e-2;
      
@@ -1396,22 +1397,22 @@ void AdrUdrProduct::callbackEsfMEAS(const ublox_msgs::EsfMEAS &m) {
       imu_.angular_velocity_covariance[0] = -1;
 
       if (data_type == 14) {
-          imu_.angular_velocity.x = data_value * deg_per_sec;
+          imu_.angular_velocity.x = data_value * rad_per_sec;
       } else if (data_type == 16) {
           imu_.linear_acceleration.x = data_value * m_per_sec_sq;
       } else if (data_type == 13) {
-          imu_.angular_velocity.y = data_value * deg_per_sec;
+          imu_.angular_velocity.y = data_value * rad_per_sec;
       } else if (data_type == 17) {
           imu_.linear_acceleration.y = data_value * m_per_sec_sq;
       } else if (data_type == 5) {
-          imu_.angular_velocity.z = data_value * deg_per_sec;
+          imu_.angular_velocity.z = data_value * rad_per_sec;
       } else if (data_type == 18) {
           imu_.linear_acceleration.z = data_value * m_per_sec_sq;
       } else if (data_type == 12) {
         //ROS_INFO("Temperature in celsius: %f", data_value * deg_c); 
       } else {
-        ROS_INFO("data_type: %u", data_type);
-        ROS_INFO("data_value: %u", data_value);
+        // ROS_INFO("data_type: %u", data_type);
+        // ROS_INFO("data_value: %u", data_value);
       }
 
       // create time ref message and put in the data
