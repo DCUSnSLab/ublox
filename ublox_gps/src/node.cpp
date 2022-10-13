@@ -1898,7 +1898,7 @@ void rtcmCallback(const rtcm_msgs::Message::ConstPtr &msg) {
 int main(int argc, char** argv) {
   ros::init(argc, argv, "ublox_gps");
   nh.reset(new ros::NodeHandle("~"));
-  ros::Subscriber subRtcm = nh->subscribe("/rtcm", 10, rtcmCallback);
+  ros::Subscriber subRtcm = nh->subscribe("ublox_gps/rtcm", 10, rtcmCallback);
   nh->param("debug", ublox_gps::debug, 1);
   if(ublox_gps::debug) {
     if (ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME,
