@@ -1,6 +1,6 @@
 # Configuration Settings for ZED-F9K device
 # Please change these settings according as necessary
-device: /dev/gps_F9K
+device: /dev/F9P_GPS
 frame_id: gps
 uart1:
   baudrate: 115200
