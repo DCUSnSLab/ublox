@@ -1,7 +1,7 @@
 # Configuration Settings for ZED-F9K device
 # Please change these settings according as necessary
 device: /dev/F9P_GPS
-frame_id: gps
+frame_id: gps_antenna_link
 uart1:
   baudrate: 115200
 config_on_startup: false
