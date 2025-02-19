@@ -16,11 +16,4 @@ inf:
 
 # Enable necessary u-blox message publishers
 publish:
-  all: false
-  esf:
-    meas: true
-  nav:
-    status: true
-    pvt: true
-    posecef: false
-    hpposllh: true
+  all: true
