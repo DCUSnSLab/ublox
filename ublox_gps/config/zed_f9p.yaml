@@ -1,4 +1,4 @@
-device: /dev/ttyACM1
+device: /dev/F9P_GPS
 frame_id: gps
 uart1:
   baudrate: 115200

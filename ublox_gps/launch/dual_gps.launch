@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <!-- 공통 인자: 파라미터 파일이 위치한 디렉토리, 출력 방식, 재시작 옵션 등 -->
+  <arg name="param_file_dir" default="$(find ublox_gps)/config" />
+  <arg name="output" default="screen" />
+  <arg name="respawn" default="true" />
+  <arg name="respawn_delay" default="30" />
+  <arg name="clear_params" default="true" />
+
+  <!-- U-Blox F9K GPS 노드 설정 -->
+  <node pkg="ublox_gps" type="ublox_gps" name="ublox_f9k"
+        output="$(arg output)"
+        clear_params="$(arg clear_params)"
+        respawn="$(arg respawn)"
+        respawn_delay="$(arg respawn_delay)">
+    <rosparam command="load" file="$(arg param_file_dir)/zed_f9k.yaml" />
+  </node>
+
+  <!-- U-Blox F9P GPS 노드 설정 -->
+  <node pkg="ublox_gps" type="ublox_gps" name="ublox_f9p"
+        output="$(arg output)"
+        clear_params="$(arg clear_params)"
+        respawn="$(arg respawn)"
+        respawn_delay="$(arg respawn_delay)">
+    <rosparam command="load" file="$(arg param_file_dir)/zed_f9p.yaml" />
+  </node>
+</launch>
