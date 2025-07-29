@@ -275,7 +275,7 @@ void UbloxNode::getRosParams() {
     }
   }
   // Measurement rate params
-  rate_ = this->declare_parameter("rate", 4.0);  // in Hz
+  rate_ = this->declare_parameter("rate", 10.0);  // in Hz
   checkMin(rate_, 0.0, "rate");
 
   nav_rate_ = declareRosIntParameter<uint16_t>(this, "nav_rate", 1);  // # of measurement rate cycles
