@@ -25,8 +25,10 @@ namespace ublox_node {
 //
 // u-blox ADR devices, partially implemented
 //
+// AdrUdrProduct::AdrUdrProduct(float protocol_version, uint16_t nav_rate, uint16_t meas_rate, const std::string & frame_id, std::shared_ptr<diagnostic_updater::Updater> updater, rclcpp::Node* node)
+//   : protocol_version_(protocol_version) ,use_adr_(false), nav_rate_(nav_rate), meas_rate_(meas_rate), frame_id_(frame_id), updater_(updater), node_(node)
 AdrUdrProduct::AdrUdrProduct(float protocol_version, uint16_t nav_rate, uint16_t meas_rate, const std::string & frame_id, std::shared_ptr<diagnostic_updater::Updater> updater, rclcpp::Node* node)
-  : protocol_version_(protocol_version) ,use_adr_(false), nav_rate_(nav_rate), meas_rate_(meas_rate), frame_id_(frame_id), updater_(updater), node_(node)
+  : use_adr_(false), protocol_version_(protocol_version), nav_rate_(nav_rate), meas_rate_(meas_rate), frame_id_(frame_id), updater_(updater), node_(node)
 {
   if (getRosBoolean(node_, "publish.esf.meas")) {
     imu_pub_ =
