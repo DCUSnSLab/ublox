@@ -278,7 +278,7 @@ void UbloxNode::getRosParams() {
   rate_ = this->declare_parameter("rate", 10.0);  // in Hz
   checkMin(rate_, 0.0, "rate");
 
-  nav_rate_ = declareRosIntParameter<uint16_t>(this, "nav_rate", 1);  // # of measurement rate cycles
+  nav_rate_ = declareRosIntParameter<uint16_t>(this, "nav_rate", 10.0);  // # of measurement rate cycles
 
   // RTCM params
   this->declare_parameter("rtcm.ids", rclcpp::PARAMETER_INTEGER_ARRAY);
