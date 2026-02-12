@@ -4,10 +4,12 @@ ublox_gps_node:
     debug: 0                    # Range 0-4 (0 means no debug statements will print)
     device: /dev/ttyACM0
     frame_id: gnss_antenna
+    rate: 10.0              # GPS output rate in Hz
+    nav_rate: 1             # Navigation rate
     uart1:
       baudrate: 9600
     # TMODE3 Config
-    tmode3: 1                   # Survey-In Mode
+    tmode3: 0                   # 0: Disabled, 1: Survey-In Mode
     sv_in:
       reset: True               # True: disables and re-enables survey-in (resets)
                                 # False: Disables survey-in only if TMODE3 is
