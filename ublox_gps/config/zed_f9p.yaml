@@ -2,7 +2,7 @@
 ublox_gps_node:
   ros__parameters:
     debug: 0                    # Range 0-4 (0 means no debug statements will print)
-    device: /dev/ttyACM0
+    device: /dev/zed_f9p
     frame_id: gnss_antenna
     rate: 10.0              # GPS output rate in Hz
     nav_rate: 1             # Navigation rate
