@@ -50,6 +50,12 @@ def generate_launch_description():
     param_config = os.path.join(config_directory, 'c94_m8p_rover.yaml')
     with open(param_config, 'r') as f:
         params = yaml.safe_load(f)['ublox_gps_node']['ros__parameters']
+
+    # Respawn the container when it exits so a transient ublox crash does not
+    # take down the whole system. Set RESPAWN_NODES=0 to disable.
+    respawn = bool(int(os.getenv('RESPAWN_NODES', '1')))
+    respawn_delay = float(os.getenv('RESPAWN_DELAY', '5'))
+
     container = ComposableNodeContainer(
             name='ublox_gps_container',
             namespace='',
@@ -63,6 +69,8 @@ def generate_launch_description():
                     parameters=[params]),
             ],
             output='both',
+            respawn=respawn,
+            respawn_delay=respawn_delay,
     )
 
     return LaunchDescription([container])

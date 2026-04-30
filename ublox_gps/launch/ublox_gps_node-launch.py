@@ -44,17 +44,17 @@ def generate_launch_description():
         ament_index_python.packages.get_package_share_directory('ublox_gps'),
         'config')
     params = os.path.join(config_directory, 'zed_f9p.yaml')
+
+    # Respawn the node when it exits so a transient ublox crash does not take
+    # down the whole system. Set RESPAWN_NODES=0 to disable.
+    respawn = bool(int(os.getenv('RESPAWN_NODES', '1')))
+    respawn_delay = float(os.getenv('RESPAWN_DELAY', '5'))
+
     ublox_gps_node = launch_ros.actions.Node(package='ublox_gps',
                                              executable='ublox_gps_node',
                                              output='both',
-                                             parameters=[params])
+                                             parameters=[params],
+                                             respawn=respawn,
+                                             respawn_delay=respawn_delay)
 
-    return launch.LaunchDescription([ublox_gps_node,
-
-                                     launch.actions.RegisterEventHandler(
-                                         event_handler=launch.event_handlers.OnProcessExit(
-                                             target_action=ublox_gps_node,
-                                             on_exit=[launch.actions.EmitEvent(
-                                                 event=launch.events.Shutdown())],
-                                         )),
-                                     ])
+    return launch.LaunchDescription([ublox_gps_node])

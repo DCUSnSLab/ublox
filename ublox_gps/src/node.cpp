@@ -37,6 +37,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include <rclcpp/rclcpp.hpp>
@@ -909,22 +910,47 @@ void UbloxNode::initialize() {
   // Do this last
   initializeRosDiagnostics();
 
-  if (configureUblox()) {
-    RCLCPP_INFO(this->get_logger(), "U-Blox configured successfully.");
-    // Subscribe to all U-Blox messages
-    subscribe();
-    // Configure INF messages (needs INF params, call after subscribing)
-    configureInf();
-
-    if (device_.substr(0, 6) == "udp://") {
-      // Setup timer to poll version message to keep UDP socket active
-      keep_alive_ = this->create_wall_timer(std::chrono::milliseconds(static_cast<int64_t>(kKeepAlivePeriod * 1000.0)),
-                                            std::bind(&UbloxNode::keepAlive, this));
+  // Retry configuration with bounded attempts; if the device never comes up we
+  // request a clean rclcpp::shutdown() so the launch system (respawn) restarts us
+  // instead of the node hanging forever or crashing the whole system.
+  const int kMaxConfigureAttempts = 5;
+  const auto kConfigureRetryDelay = std::chrono::seconds(10);
+  bool configured = false;
+  for (int attempt = 1; attempt <= kMaxConfigureAttempts; ++attempt) {
+    if (configureUblox()) {
+      configured = true;
+      break;
     }
-
-    poller_ = this->create_wall_timer(std::chrono::milliseconds(static_cast<int64_t>(kPollDuration * 1000.0)),
-                                      std::bind(&UbloxNode::pollMessages, this));
+    RCLCPP_WARN(this->get_logger(),
+                "U-Blox not configured successfully (attempt %d/%d). Retrying in %ld s...",
+                attempt, kMaxConfigureAttempts,
+                static_cast<long>(kConfigureRetryDelay.count()));
+    std::this_thread::sleep_for(kConfigureRetryDelay);
   }
+
+  if (!configured) {
+    RCLCPP_ERROR(this->get_logger(),
+                 "U-Blox failed to configure after %d attempts. Shutting down node.",
+                 kMaxConfigureAttempts);
+    shutdown();
+    rclcpp::shutdown();
+    return;
+  }
+
+  RCLCPP_INFO(this->get_logger(), "U-Blox configured successfully.");
+  // Subscribe to all U-Blox messages
+  subscribe();
+  // Configure INF messages (needs INF params, call after subscribing)
+  configureInf();
+
+  if (device_.substr(0, 6) == "udp://") {
+    // Setup timer to poll version message to keep UDP socket active
+    keep_alive_ = this->create_wall_timer(std::chrono::milliseconds(static_cast<int64_t>(kKeepAlivePeriod * 1000.0)),
+                                          std::bind(&UbloxNode::keepAlive, this));
+  }
+
+  poller_ = this->create_wall_timer(std::chrono::milliseconds(static_cast<int64_t>(kPollDuration * 1000.0)),
+                                    std::bind(&UbloxNode::pollMessages, this));
 }
 
 void UbloxNode::shutdown() {
