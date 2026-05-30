@@ -196,8 +196,15 @@ void AsyncWorker<StreamT>::doWrite() {
   if (out_.size() == 0) {
     return;
   }
-  // Write all the data in the out buffer
-  asio::write(*stream_, asio::buffer(out_.data(), out_.size()));
+  // error_code overload: a thrown write error here (e.g. device unplugged) runs
+  // on the io_service thread and would std::terminate() the process. Drop instead.
+  asio::error_code write_ec;
+  asio::write(*stream_, asio::buffer(out_.data(), out_.size()), write_ec);
+  if (write_ec) {
+    RCLCPP_ERROR(logger_, "U-Blox ASIO write error: %s", write_ec.message().c_str());
+    out_.clear();
+    return;
+  }
 
   if (debug_ >= 2) {
     // Print the data that was sent
@@ -219,8 +226,15 @@ inline void AsyncWorker<asio::ip::udp::socket>::doWrite() {
   if (out_.size() == 0) {
     return;
   }
-  // Write all the data in the out buffer
-  stream_->send(asio::buffer(out_.data(), out_.size()));
+  // error_code overload so a send error isn't thrown on the io_service thread.
+  // See the serial/tcp doWrite() above.
+  asio::error_code send_ec;
+  stream_->send(asio::buffer(out_.data(), out_.size()), 0, send_ec);
+  if (send_ec) {
+    RCLCPP_ERROR(logger_, "U-Blox ASIO UDP send error: %s", send_ec.message().c_str());
+    out_.clear();
+    return;
+  }
 
   if (debug_ >= 2) {
     // Print the data that was sent
@@ -283,6 +297,11 @@ void AsyncWorker<StreamT>::readEnd(const asio::error_code& error,
     RCLCPP_ERROR(logger_, "U-Blox ASIO input buffer read error: %s, %li",
                  error.message().c_str(),
                  bytes_transferred);
+    // On disconnect the read errors immediately every time; back off so re-arming
+    // (below) doesn't spin the thread at 100% CPU and flood the log.
+    if (!stopping_) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
   } else if (bytes_transferred > 0) {
     in_buffer_size_ += bytes_transferred;
 

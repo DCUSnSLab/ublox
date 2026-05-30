@@ -10,7 +10,13 @@ int main(int argc, char** argv) {
 
   rclcpp::init(argc, argv);
 
-  rclcpp::spin(std::make_shared<ublox_node::UbloxNode>(rclcpp::NodeOptions()));
+  auto node = std::make_shared<ublox_node::UbloxNode>(rclcpp::NodeOptions());
+
+  // initialize() may rclcpp::shutdown() on device failure; don't spin an
+  // already-shut-down context (would throw RCLError) — exit cleanly for respawn.
+  if (rclcpp::ok()) {
+    rclcpp::spin(node);
+  }
 
   rclcpp::shutdown();
 

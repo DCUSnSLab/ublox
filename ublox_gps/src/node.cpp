@@ -895,9 +895,40 @@ void UbloxNode::initialize() {
                                                kFixFreqWindow, kTimeStampStatusMin, nav_rate_, meas_rate_, updater_);
 
 
-  initializeIo();
-  // Must process Mon VER before setting firmware/hardware params
-  processMonVer();
+  // Bounded retry to bring up the device (open port + read MON-VER). These throw
+  // when the device is absent; catch so a missing device retries then shuts down
+  // cleanly (for respawn) instead of aborting the process before the loop below.
+  const int kMaxConfigureAttempts = 5;
+  const auto kConfigureRetryDelay = std::chrono::seconds(10);
+
+  bool io_ready = false;
+  for (int attempt = 1; attempt <= kMaxConfigureAttempts; ++attempt) {
+    try {
+      initializeIo();
+      // Must process Mon VER before setting firmware/hardware params
+      processMonVer();
+      io_ready = true;
+      break;
+    } catch (const std::exception & e) {
+      RCLCPP_WARN(this->get_logger(),
+                  "U-Blox device not available (attempt %d/%d): %s. Retrying in %ld s...",
+                  attempt, kMaxConfigureAttempts, e.what(),
+                  static_cast<long>(kConfigureRetryDelay.count()));
+      shutdown();  // close any half-open connection before retrying
+      if (attempt < kMaxConfigureAttempts) {
+        std::this_thread::sleep_for(kConfigureRetryDelay);
+      }
+    }
+  }
+
+  if (!io_ready) {
+    RCLCPP_ERROR(this->get_logger(),
+                 "U-Blox device could not be opened after %d attempts. Shutting down node.",
+                 kMaxConfigureAttempts);
+    shutdown();
+    rclcpp::shutdown();
+    return;
+  }
   if (protocol_version_ <= 14.0) {
     if (getRosBoolean(this, "raw_data")) {
       components_.push_back(std::make_shared<RawDataProduct>(nav_rate_, meas_rate_, updater_, this));
@@ -910,11 +941,8 @@ void UbloxNode::initialize() {
   // Do this last
   initializeRosDiagnostics();
 
-  // Retry configuration with bounded attempts; if the device never comes up we
-  // request a clean rclcpp::shutdown() so the launch system (respawn) restarts us
-  // instead of the node hanging forever or crashing the whole system.
-  const int kMaxConfigureAttempts = 5;
-  const auto kConfigureRetryDelay = std::chrono::seconds(10);
+  // Retry configuration (reuses the constants above); clean shutdown for respawn
+  // if it never configures.
   bool configured = false;
   for (int attempt = 1; attempt <= kMaxConfigureAttempts; ++attempt) {
     if (configureUblox()) {
